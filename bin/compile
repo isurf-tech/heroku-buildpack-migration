@@ -1,0 +1,40 @@
+#!/bin/sh
+
+BUILD_DIR=${1:-}
+CACHE_DIR=${2:-}
+ENV_DIR=${3:-}
+
+export_env_dir() {
+  local env_dir=$1
+  if [ -d "$env_dir" ]; then
+    local whitelist_regex=${2:-''}
+    local blacklist_regex=${3:-'^(PATH|GIT_DIR|CPATH|CPPATH|LD_PRELOAD|LIBRARY_PATH|LANG)$'}
+    if [ -d "$env_dir" ]; then
+      for e in $(ls $env_dir); do
+        echo "$e" | grep -E "$whitelist_regex" | grep -qvE "$blacklist_regex" &&
+        export "$e=$(cat $env_dir/$e)"
+        :
+      done
+    fi
+  fi
+}
+
+create_default_env() {
+  export NPM_CONFIG_PRODUCTION=${NPM_CONFIG_PRODUCTION:-true}
+  export NPM_CONFIG_LOGLEVEL=${NPM_CONFIG_LOGLEVEL:-error}
+  export NODE_MODULES_CACHE=${NODE_MODULES_CACHE:-true}
+  export NODE_ENV=${NODE_ENV:-production}
+  export NODE_VERBOSE=${NODE_VERBOSE:-false}
+}
+
+export_env_dir "$ENV_DIR"
+create_default_env
+
+# CHECK IF HAVE DATABASE URL
+if [[ -z "$DATABASE_URL" ]]; then
+    echo " === Must provide DATABASE_URL in environment === " 1>&2
+    exit 1
+fi
+
+cd $BUILD_DIR
+npm run migration:run

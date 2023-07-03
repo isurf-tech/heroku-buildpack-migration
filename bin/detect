@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -e
+
+BUILD_DIR=$1
+
+# Always return true
+exit 0
+
+
